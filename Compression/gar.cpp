@@ -5,8 +5,8 @@
 
 using namespace std;
 
-map<uint8_t, int> freq_count;
-vector< vector <bool> > encodings(128);
+map< uint8_t, int > freq_count;
+map< uint8_t, vector <bool> > encodings;
 
 
 //Custom node struct to store the Huffman Tree Nodes
@@ -98,6 +98,9 @@ void huffman_tree (Node **tree,int num_count) {
 	pq.pop();
 }	
 
+void compress_data(uint8_t* data_ptr){
+	return;	
+}
 //Build encoding table using pre-order traversal of tree
 void build_table(Node *tree, vector <bool> *code){
 	if(tree==NULL || tree== 0){
@@ -105,9 +108,9 @@ void build_table(Node *tree, vector <bool> *code){
 	}
 	
 	if(tree->symbol<128 && (tree->symbol)>=0){
-		encodings.at(tree->symbol)=*code;
+		encodings[tree->symbol]=*code;
 		printf("%d ",tree->symbol);
-		print_bit_vector(encodings.at(tree->symbol));
+		print_bit_vector(encodings[tree->symbol]);
 	}
 	else{
 		vector<bool> clone=*code;
@@ -139,6 +142,7 @@ int main()
 	 huffman_tree(&tree,num_count);
  	 build_table( tree, &code);
 
+	 compress_data(raw_data);
 	 
 
 
