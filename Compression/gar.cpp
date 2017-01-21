@@ -1,11 +1,13 @@
 #include <iostream>
 #include <vector>
 #include <queue>
+#include <map>
 
 using namespace std;
 
-vector<int8_t> freq_count(128,0);
+map<uint8_t, int> freq_count;
 vector< vector <bool> > encodings(128);
+
 
 //Custom node struct to store the Huffman Tree Nodes
 typedef struct Node{
@@ -31,11 +33,11 @@ int count_frequencies(uint8_t * data_ptr,int data_size){
 
 	int num_count=0;
 	for(int i = 0;i<data_size;i++){
-		if(freq_count.at(data_ptr[i])==0){
+		if(freq_count[data_ptr[i]]==0) {
 			num_count++;
 		}
 
-		freq_count.at(data_ptr[i])++;
+		freq_count[data_ptr[i]]++;
 	}
 	
 
@@ -56,17 +58,19 @@ void print_bit_vector(vector<bool> bit_vector){
 void huffman_tree (Node **tree,int num_count) {
 	
 	priority_queue<Node_wsk, vector<Node_wsk>, MyComparator> pq;
-	Node_wsk leafs[128];
-	
+	Node_wsk leafs[num_count];
+	int i=0;	
 	//Create the leaf nodes and insert into priority queue
-	for(int i=0; i<128; i++){
+	for(map<uint8_t,int>::iterator iter = freq_count.begin(); iter != freq_count.end(); ++iter)
+	{
 		Node_wsk temp = new Node;
 		leafs[i]=temp;
-		leafs[i]->value = freq_count[i];
-		leafs[i]->symbol = i;
+		leafs[i]->value = iter->second;
+		leafs[i]->symbol = iter->first;
 		leafs[i]->left = NULL;
 		leafs[i]->right = NULL;
 		pq.push(leafs[i]);
+		i++;
 	}
 
 	//while there is more than one node in the queue:
