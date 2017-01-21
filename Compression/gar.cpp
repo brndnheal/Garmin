@@ -2,6 +2,8 @@
 #include <vector>
 #include <queue>
 #include <map>
+#include <string>
+#include <sstream>
 
 using namespace std;
 
@@ -24,6 +26,11 @@ struct MyComparator {
 };       
 
 
+template <typename Iter, typename Cont>
+bool is_last(Iter iter, const Cont& cont)
+{
+    return (iter != cont.end()) && (next(iter) == cont.end());
+}
 //Highest priority will be one with lowest probability/frequency
 //bool operator<(const Node*d1, const Node *d2){return d1.value > d2.value;}
 
@@ -44,10 +51,12 @@ int count_frequencies(uint8_t * data_ptr,int data_size){
 
 }
 
-void print_bit_vector(vector<bool> bit_vector){
+string print_bit_vector(vector<bool> bit_vector){
+	string bit_string("");
 	for (int i=0;i<bit_vector.size();i++){
-		cout << bit_vector.at(i);
+		bit_vector.at(i) ? bit_string+="1" : bit_string+="0";
 	}
+	return bit_string;
 }
 
 
@@ -101,9 +110,11 @@ vector<bool> compress_data(uint8_t* data_ptr, int data_size){
 	for(int i=0;i<data_size;i++){
 		code=encodings[data_ptr[i]];
 		compressed_data.insert(compressed_data.end(),code.begin(),code.end());
-	}	
-	print_bit_vector(compressed_data);
+	}
+
+	return compressed_data;	
 }
+
 //Build encoding table using pre-order traversal of tree
 void build_table(Node *tree, vector <bool> *code){
 	if(tree==NULL || tree== 0){
@@ -124,7 +135,19 @@ void build_table(Node *tree, vector <bool> *code){
 	return;
 }
 
-
+string print_table(){
+	stringstream ss;
+	ss << '{';
+	for(map<uint8_t,vector<bool>>::iterator iter = encodings.begin(); iter != encodings.end(); ++iter){
+		ss << hex << (int)iter->first;
+	        ss << (':' + print_bit_vector( iter->second ));
+		if(!is_last(iter,encodings)){
+			ss<<',';	
+		}
+	}
+	ss << '}';
+        return ss.str();
+}
 
 int main()
 {	
@@ -132,7 +155,6 @@ int main()
 	 uint8_t raw_data[data_size] =  { 0x03, 0x74, 0x04, 0x04, 0x04, 0x35, 0x35, 0x64,
 		 		0x64, 0x64, 0x64, 0x00, 0x00, 0x00, 0x00, 0x00,
 				0x56, 0x45, 0x56, 0x56, 0x56, 0x09, 0x09, 0x09,0x07, 0x07,0x07,0x07,0x07,0x12,0x12,0x12,0x12,0x12 };
-
 	 
 	 int num_count=count_frequencies(raw_data,data_size);
 
@@ -142,13 +164,14 @@ int main()
 	 //Assumes data and tree fit in memory
 	 huffman_tree(&tree,num_count);
  	 build_table( tree, &code);
-
-	 compress_data(raw_data,data_size);
+	 	 
+	 vector<bool> compressed_data=compress_data(raw_data,data_size);
 	 
-
-
-/*	 for(vector<int8_t>::iterator it = compressed.begin(); it != compressed.end(); ++it) {
-		 printf("%x",*it);
-	 }*/
+	 cout << print_table() << print_bit_vector(compressed_data);
+	 /*
+	 printf("Original Data Size was %d bits\n",data_size*8);
+	 printf("Compressed Data Size is %d bits\n", compressed_data.size());
+	 printf("Compressed Data is %f %% of original \n",  compressed_data.size() / ( data_size*8.0 ) *100.0  );
+*/
 }
 
