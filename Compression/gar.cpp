@@ -5,7 +5,7 @@
 using namespace std;
 
 vector<int8_t> freq_count(128,0);
-vector<int> encodings(128,0);
+vector< vector <bool> > encodings(128);
 
 //Custom node struct to store the Huffman Tree Nodes
 typedef struct Node{
@@ -25,20 +25,35 @@ struct MyComparator {
 //Highest priority will be one with lowest probability/frequency
 //bool operator<(const Node*d1, const Node *d2){return d1.value > d2.value;}
 
-//Counts the frequencies of each of the 128 character and stores in vector freq_count
-void count_frequencies(uint8_t * data_ptr,int data_size){
+//Counts the frequencies of each of the 128 character and stores in vector freq_counti
+//returns the number of characters used
+int count_frequencies(uint8_t * data_ptr,int data_size){
 
+	int num_count=0;
 	for(int i = 0;i<data_size;i++){
+		if(freq_count.at(data_ptr[i])==0){
+			num_count++;
+		}
+
 		freq_count.at(data_ptr[i])++;
 	}
 	
 
 	printf("\n");
+	return num_count;
 
 }
 
+void print_bit_vector(vector<bool> bit_vector){
+	for (int i=0;i<bit_vector.size();i++){
+		cout << bit_vector.at(i);
+	}
+	cout << "\n";
+}
+
+
 //Constructs the Huffman Tree using a priority queue - O(nlogn)
-void huffman_tree (Node **tree) {
+void huffman_tree (Node **tree,int num_count) {
 	
 	priority_queue<Node_wsk, vector<Node_wsk>, MyComparator> pq;
 	Node_wsk leafs[128];
@@ -80,38 +95,45 @@ void huffman_tree (Node **tree) {
 }	
 
 //Build encoding table using pre-order traversal of tree
-void build_table(Node *tree, long long int code){
+void build_table(Node *tree, vector <bool> *code){
 	if(tree==NULL || tree== 0){
 		return;
 	}
 	
 	if(tree->symbol<128 && (tree->symbol)>=0){
-		encodings.at(tree->symbol)=code;
-		printf("%d %d\n",code, tree->symbol);
+		encodings.at(tree->symbol)=*code;
+		printf("%d ",tree->symbol);
+		print_bit_vector(encodings.at(tree->symbol));
 	}
 	else{
-		build_table( tree->left, code*10+1);
-		build_table( tree->right, code*10+2);
+		vector<bool> clone=*code;
+		code->push_back(0);
+		clone.push_back(1);
+		build_table( tree->left, code );
+		build_table( tree->right, &clone );
 	}
+
 	return;
 }
 
+
+
 int main()
-{
-	
+{	
 	 int data_size =  24;
 	 uint8_t raw_data[data_size] =  { 0x03, 0x74, 0x04, 0x04, 0x04, 0x35, 0x35, 0x64,
 		 		0x64, 0x64, 0x64, 0x00, 0x00, 0x00, 0x00, 0x00,
-				0x56, 0x45, 0x56, 0x56, 0x56, 0x09, 0x09, 0x09 };
+				0x56, 0x45, 0x56, 0x56, 0x56, 0x09, 0x09, 0x09,0x07, 0x07,0x07,0x07,0x07,0x12,0x12,0x12,0x12,0x12 };
 
 	 
-	 count_frequencies(raw_data,data_size);
+	 int num_count=count_frequencies(raw_data,data_size);
 
          Node* tree;
 	 
+	 vector<bool> code(0);
 	 //Assumes data and tree fit in memory
-	 huffman_tree(&tree);
- 	 build_table( tree, 0);
+	 huffman_tree(&tree,num_count);
+ 	 build_table( tree, &code);
 
 	 
 
