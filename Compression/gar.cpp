@@ -4,7 +4,6 @@
 #include <map>
 #include <string>
 #include <sstream>
-
 using namespace std;
 
 //Hash map that counts frequency of each symbol
@@ -61,6 +60,11 @@ string print_bit_vector(vector<bool> bit_vector){
 	return bit_string;
 }
 
+uint8_t bitvector_to_int(vector<bool> bit_vec){
+
+	auto p = bit_vec.begin()._M_p;
+	return (uint8_t) *p;
+}
 
 //Constructs the Huffman Tree using a priority queue - O(nlogn)
 void huffman_tree (Node **tree,int num_count) {
@@ -157,13 +161,12 @@ vector<string> split(const string &s, char delim) {
 }
 
 //Parse the encoding table from the table string
-map< uint8_t, vector <bool> > parse_table(string table_str){
-	map< uint8_t, vector<bool>> table;
+map< vector<bool>, uint8_t > parse_table(string table_str){
+	map< vector<bool>, uint8_t> table;
 	vector<string> rows = split(table_str, ',');
 	int symbol;  
 	for(vector<string>::iterator iter = rows.begin();iter!=rows.end(); ++iter){
 		vector<string> parts = split(*iter, ':');
-		cout << parts[0] <<" : " << parts[1] <<'\n';
 		stringstream ss;
 		ss << hex << parts[0];
 		ss >> symbol;
@@ -172,7 +175,7 @@ map< uint8_t, vector <bool> > parse_table(string table_str){
 		for(auto a : parts[1])
 			code.push_back(a == '1');
 
-		table[(uint8_t)symbol]= code;
+		table[code]= symbol;
 			
 	}
 	return table;
@@ -180,22 +183,30 @@ map< uint8_t, vector <bool> > parse_table(string table_str){
 
 
 //Decompress the compressed string by rebuilding the encoding map and computing the values
-void decompress(string compressed){
+vector<uint8_t> decompress(string compressed){
 	
 	string table_str=compressed.substr(1,compressed.find("}")-1);
-	map< uint8_t, vector <bool> > table = parse_table(table_str);
+	map< vector<bool>, uint8_t > table = parse_table(table_str);
 	
 	string code = compressed.substr(compressed.find("}")+1);
 
-	cout << code <<"\n";
 	string temp=code;
 	
 	vector<bool> lookup_str(0);
+	vector<uint8_t> decompressed;
 	while(temp.size()>0){
-		if(table.containsValue(lookup_str)){
-			
+		if(table.count( lookup_str )){
+			decompressed.push_back(table[lookup_str]);
+			vector <bool> cleared(0);
+			lookup_str=cleared;
+
 		}
+		(int) (temp.at(0)-'0') ? lookup_str.push_back(1) : lookup_str.push_back(0);
+		temp.erase(0,1);
+
 	}
+	decompressed.push_back(table[lookup_str]);
+	return decompressed;
 }
 
 
@@ -222,6 +233,16 @@ int main()
 		 		0x64, 0x64, 0x64, 0x00, 0x00, 0x00, 0x00, 0x00,
 				0x56, 0x45, 0x56, 0x56, 0x56, 0x09, 0x09, 0x09,0x07, 0x07,0x07,0x07,0x07,0x12,0x12,0x12,0x12,0x12 };
 	 
+	 cout << "Raw Data : \n{";
+	 for(int i =0; i< data_size; i++){
+		cout<< "0x"<<hex << (int)raw_data[i];
+		if (i!=data_size-1){
+			cout << ", ";
+		}
+
+	 }
+	 cout << "}\n\n";
+
 	 int num_count = count_frequencies(raw_data, data_size);
 
          Node* tree;
@@ -234,16 +255,25 @@ int main()
 	 
 	 string table = print_table();
 
-	 decompress( table+print_bit_vector(compressed_data) );
+	 vector<uint8_t> decompressed_data = decompress( table+print_bit_vector(compressed_data) );
+
 	 //Tomorrow: Decompress the data, parse the hash_map, compute the raw_data
 
-	 cout << "Compressed Data in comprehensive format : " << table << print_bit_vector(compressed_data) << "\n";
-
-	 cout << "Original Data Size was " << data_size*8 <<" bits\n";
-	 cout << "Compressed Data Size is " <<compressed_data.size()<< " bits\n";
+	 cout << "Compressed Data in comprehensive format : \n" << dec<<table << print_bit_vector(compressed_data) << "\n\n";
+	 cout << "Original Data Size was " << (int)data_size*8 <<" bits\n";
+	 cout << "Compressed Data Size is " << compressed_data.size()<< " bits\n\n";
 	 cout << "Compression Ratio without table is " <<    compressed_data.size() / ( data_size*8.0 ) *100.0 <<" % \n";
 	 cout << "Overhead size for table storage is " << table.size()*8 <<" bits\n";
-	 cout << "True Compression Ratio is "<< (compressed_data.size()+table.size()*8.0) / ( data_size*8.0 ) *100.0 <<" % \n";
+	 cout << "True Compression Ratio is "<< (compressed_data.size()+table.size()*8.0) / ( data_size*8.0 ) *100.0 <<" % \n\n";
+	 
+	 cout<<"Decompressed Data : \n{";
+	 for(vector<uint8_t>::iterator iter = decompressed_data.begin();iter!= decompressed_data.end(); ++iter){
+		cout <<"0x" << hex<<(int)*iter;
+		if (!is_last(iter,decompressed_data)){
+			cout << ", ";
+		}
+	 }
+	 cout<<"}\n";
 
 }
 
