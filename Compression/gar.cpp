@@ -13,7 +13,7 @@ using namespace std;
  * Worst Case is therefore when all symbols have the same probability
  *
  * Assumptions: Data and Tree fit in Memory, input data is sound for both compression and decompression
- * 
+ *
  * Possible Future Improvements:
  * 	-Support Command Line Arguments ( gar -c to compress, gar -x to extract)
  * 	-Support File Compression and Decompression
@@ -46,7 +46,7 @@ struct MyComparator {
 	}
 };       
 
-//Magic code that checks if we are at the end of an iterator
+//Checks if we are at the end of an iterator 
 template <typename Iter, typename Cont>
 bool is_last(Iter iter, const Cont& cont)
 {
@@ -248,15 +248,21 @@ string print_table(){
 int main()
 {	
 	 int data_size = 128 ;
+
+
 	 /*uint8_t raw_data[data_size] =  { 0x03, 0x74, 0x04, 0x04, 0x04, 0x35, 0x35, 0x64,
 		 		0x64, 0x64, 0x64, 0x00, 0x00, 0x00, 0x00, 0x00,
 				0x56, 0x45, 0x56, 0x56, 0x56, 0x09, 0x09, 0x09,0x07, 0x07,0x07,0x07,0x07,0x12,0x12,0x12,0x12,0x12 };
 	 */
 	 uint8_t raw_data[data_size]={0};
 	
-	 
+	 //Check that there is data to compress	 
+	 if(data_size==0){
+		cout << "Input data is empty \n";
+		exit(0);
+	 }
 
-	
+	 //Printing the Raw Data :	
 	 cout << "Raw Data : \n{";
 	 for(int i =0; i< data_size; i++){
 		cout<< "0x"<<hex << (int)raw_data[i];
@@ -267,18 +273,16 @@ int main()
 	 }
 	 cout << "}\n\n" << dec;
 
-	 if(data_size==0){
-		cout << "Input data is empty \n";
-		exit(0);
-	 }
-
+	 //Compute the frequency of each symbol
 	 int num_count = count_frequencies(raw_data, data_size);
 
-         Node* tree;
+         //Build the huffman tree based on frequency
+	 Node* tree;
 	 
-	 vector<bool> code(0);
 	 huffman_tree(&tree, num_count);
 
+	 //Build Encoding Table
+	 vector<bool> code(0);
 	 //Special case for data containing only one character (Root Node is the leaf)
 	 if(num_count==1){
 		 code.push_back(0);
@@ -286,10 +290,11 @@ int main()
 
  	 build_table( tree, &code);
 	 	 
+	 //Compress Data using encoding table
 	 vector<bool> compressed_data = compress_data( raw_data, data_size );
 	 
+	 //Get readable output for table
 	 string table = print_table();
-
 
 	 cout << "Compressed Data in comprehensive format : \n" << dec<<table << print_bit_vector(compressed_data) << "\n\n";
 	 cout << "Original Data Size was " << (int)data_size*8 <<" bits\n";
@@ -298,6 +303,7 @@ int main()
 	 cout << "Overhead size for table storage is " << table.size()*8 <<" bits\n";
 	 cout << "True Compression Ratio is "<< (compressed_data.size()+table.size()*8.0) / ( data_size*8.0 ) *100.0 <<" % \n\n";
 	 
+	 //Decompress the data from text-based format
 	 vector<uint8_t> decompressed_data = decompress( table+print_bit_vector(compressed_data) );
 	 cout<<"Decompressed Data : \n{";
 	 for(vector<uint8_t>::iterator iter = decompressed_data.begin();iter!= decompressed_data.end(); ++iter){
