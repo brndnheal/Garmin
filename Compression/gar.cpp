@@ -18,8 +18,8 @@ typedef struct Node{
 
 
 struct MyComparator {
-	    bool operator() (Node_wsk arg1, Node_wsk arg2) {
-		 return arg1->value > arg2->value; //calls your operator
+    	bool operator() (Node_wsk arg1, Node_wsk arg2) {
+		 return arg1->value > arg2->value;
 	}
 };       
 
@@ -40,8 +40,6 @@ int count_frequencies(uint8_t * data_ptr,int data_size){
 		freq_count[data_ptr[i]]++;
 	}
 	
-
-	printf("\n");
 	return num_count;
 
 }
@@ -50,7 +48,6 @@ void print_bit_vector(vector<bool> bit_vector){
 	for (int i=0;i<bit_vector.size();i++){
 		cout << bit_vector.at(i);
 	}
-	cout << "\n";
 }
 
 
@@ -98,8 +95,14 @@ void huffman_tree (Node **tree,int num_count) {
 	pq.pop();
 }	
 
-void compress_data(uint8_t* data_ptr){
-	return;	
+vector<bool> compress_data(uint8_t* data_ptr, int data_size){
+	vector<bool> compressed_data(0);
+	vector<bool> code;
+	for(int i=0;i<data_size;i++){
+		code=encodings[data_ptr[i]];
+		compressed_data.insert(compressed_data.end(),code.begin(),code.end());
+	}	
+	print_bit_vector(compressed_data);
 }
 //Build encoding table using pre-order traversal of tree
 void build_table(Node *tree, vector <bool> *code){
@@ -109,8 +112,6 @@ void build_table(Node *tree, vector <bool> *code){
 	
 	if(tree->symbol<128 && (tree->symbol)>=0){
 		encodings[tree->symbol]=*code;
-		printf("%d ",tree->symbol);
-		print_bit_vector(encodings[tree->symbol]);
 	}
 	else{
 		vector<bool> clone=*code;
@@ -142,7 +143,7 @@ int main()
 	 huffman_tree(&tree,num_count);
  	 build_table( tree, &code);
 
-	 compress_data(raw_data);
+	 compress_data(raw_data,data_size);
 	 
 
 
