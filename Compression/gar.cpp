@@ -7,7 +7,9 @@
 
 using namespace std;
 
+//Hash map that counts frequency of each symbol
 map< uint8_t, int > freq_count;
+//Hash map that contains the encodings for each symbol 
 map< uint8_t, vector <bool> > encodings;
 
 
@@ -19,23 +21,22 @@ typedef struct Node{
 } *Node_wsk;
 
 
+//Comparator for priority queue - Highest priority will be one with lowest probability/frequency
 struct MyComparator {
     	bool operator() (Node_wsk arg1, Node_wsk arg2) {
 		 return arg1->value > arg2->value;
 	}
 };       
 
-
+//Magic code that checks if we are at the end of an iterator
 template <typename Iter, typename Cont>
 bool is_last(Iter iter, const Cont& cont)
 {
     return (iter != cont.end()) && (next(iter) == cont.end());
 }
-//Highest priority will be one with lowest probability/frequency
-//bool operator<(const Node*d1, const Node *d2){return d1.value > d2.value;}
 
-//Counts the frequencies of each of the 128 character and stores in vector freq_counti
-//returns the number of characters used
+//Counts the frequencies of each of the 128 symbols and stores in vector freq_count
+//Returns the number of distinct symbols used
 int count_frequencies(uint8_t * data_ptr,int data_size){
 
 	int num_count=0;
@@ -51,6 +52,7 @@ int count_frequencies(uint8_t * data_ptr,int data_size){
 
 }
 
+//Returns a string representation of a bit_vector
 string print_bit_vector(vector<bool> bit_vector){
 	string bit_string("");
 	for (int i=0;i<bit_vector.size();i++){
@@ -104,6 +106,7 @@ void huffman_tree (Node **tree,int num_count) {
 	pq.pop();
 }	
 
+//Creates the compressed bit string representing the data by performing lookups on the encoding table - O(nlogn)
 vector<bool> compress_data(uint8_t* data_ptr, int data_size){
 	vector<bool> compressed_data(0);
 	vector<bool> code;
@@ -115,7 +118,7 @@ vector<bool> compress_data(uint8_t* data_ptr, int data_size){
 	return compressed_data;	
 }
 
-//Build encoding table using pre-order traversal of tree
+//Build encoding table using pre-order traversal of tree - O(n) 
 void build_table(Node *tree, vector <bool> *code){
 	if(tree==NULL || tree== 0){
 		return;
@@ -133,8 +136,70 @@ void build_table(Node *tree, vector <bool> *code){
 	}
 
 	return;
+
 }
 
+
+//String Split function to help parse the table
+void split(const std::string &s, char delim, std::vector<std::string> &elems) {
+    std::stringstream ss;
+    ss.str(s);
+    std::string item;
+    while (std::getline(ss, item, delim)) {
+        elems.push_back(item);
+    }
+}
+
+vector<string> split(const string &s, char delim) {
+    vector<string> elems;
+    split(s, delim, elems);
+    return elems;
+}
+
+//Parse the encoding table from the table string
+map< uint8_t, vector <bool> > parse_table(string table_str){
+	map< uint8_t, vector<bool>> table;
+	vector<string> rows = split(table_str, ',');
+	int symbol;  
+	for(vector<string>::iterator iter = rows.begin();iter!=rows.end(); ++iter){
+		vector<string> parts = split(*iter, ':');
+		cout << parts[0] <<" : " << parts[1] <<'\n';
+		stringstream ss;
+		ss << hex << parts[0];
+		ss >> symbol;
+
+        	vector <bool> code(0);	
+		for(auto a : parts[1])
+			code.push_back(a == '1');
+
+		table[(uint8_t)symbol]= code;
+			
+	}
+	return table;
+}
+
+
+//Decompress the compressed string by rebuilding the encoding map and computing the values
+void decompress(string compressed){
+	
+	string table_str=compressed.substr(1,compressed.find("}")-1);
+	map< uint8_t, vector <bool> > table = parse_table(table_str);
+	
+	string code = compressed.substr(compressed.find("}")+1);
+
+	cout << code <<"\n";
+	string temp=code;
+	
+	vector<bool> lookup_str(0);
+	while(temp.size()>0){
+		if(table.containsValue(lookup_str)){
+			
+		}
+	}
+}
+
+
+//Returns string output representing encoding table
 string print_table(){
 	stringstream ss;
 	ss << '{';
@@ -149,6 +214,7 @@ string print_table(){
         return ss.str();
 }
 
+//Assumptions: Data and Tree fit in Memory, input data is sound for both compression and decompression
 int main()
 {	
 	 int data_size =  24;
@@ -156,22 +222,28 @@ int main()
 		 		0x64, 0x64, 0x64, 0x00, 0x00, 0x00, 0x00, 0x00,
 				0x56, 0x45, 0x56, 0x56, 0x56, 0x09, 0x09, 0x09,0x07, 0x07,0x07,0x07,0x07,0x12,0x12,0x12,0x12,0x12 };
 	 
-	 int num_count=count_frequencies(raw_data,data_size);
+	 int num_count = count_frequencies(raw_data, data_size);
 
          Node* tree;
 	 
 	 vector<bool> code(0);
-	 //Assumes data and tree fit in memory
-	 huffman_tree(&tree,num_count);
+	 huffman_tree(&tree, num_count);
  	 build_table( tree, &code);
 	 	 
-	 vector<bool> compressed_data=compress_data(raw_data,data_size);
+	 vector<bool> compressed_data = compress_data( raw_data, data_size );
 	 
-	 cout << print_table() << print_bit_vector(compressed_data);
-	 /*
-	 printf("Original Data Size was %d bits\n",data_size*8);
-	 printf("Compressed Data Size is %d bits\n", compressed_data.size());
-	 printf("Compressed Data is %f %% of original \n",  compressed_data.size() / ( data_size*8.0 ) *100.0  );
-*/
+	 string table = print_table();
+
+	 decompress( table+print_bit_vector(compressed_data) );
+	 //Tomorrow: Decompress the data, parse the hash_map, compute the raw_data
+
+	 cout << "Compressed Data in comprehensive format : " << table << print_bit_vector(compressed_data) << "\n";
+
+	 cout << "Original Data Size was " << data_size*8 <<" bits\n";
+	 cout << "Compressed Data Size is " <<compressed_data.size()<< " bits\n";
+	 cout << "Compression Ratio without table is " <<    compressed_data.size() / ( data_size*8.0 ) *100.0 <<" % \n";
+	 cout << "Overhead size for table storage is " << table.size()*8 <<" bits\n";
+	 cout << "True Compression Ratio is "<< (compressed_data.size()+table.size()*8.0) / ( data_size*8.0 ) *100.0 <<" % \n";
+
 }
 
